@@ -244,6 +244,11 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     [_tableView reloadData];
 }
 
+- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error{
+    _response = error.localizedDescription;
+    [_tableView reloadData];
+}
+
 #pragma mark - public
 - (void)jh_set_GET_URL:(NSString *)url parameter:(NSDictionary *)dic{
     _url = url; _dic = dic; _method = @"GET";
