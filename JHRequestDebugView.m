@@ -145,7 +145,18 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     [_tableView reloadData];
     // show
     _show = YES;
-    [[UIApplication sharedApplication].keyWindow.rootViewController.view.window addSubview:self];
+        
+    //add to window
+    NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication] windows] reverseObjectEnumerator];
+    for (UIWindow *window in frontToBackWindows)
+    {
+        if (window.windowLevel == UIWindowLevelNormal)
+        {
+            [window addSubview:self];
+            [window bringSubviewToFront:self];
+            break;
+        }
+    }
 }
 
 - (void)xx_json_format{
