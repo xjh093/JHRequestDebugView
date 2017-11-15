@@ -251,12 +251,15 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     }else{
         _response = innerText;
     }
-    [UIPasteboard generalPasteboard].string = _response;
+    NSString *result = [NSString stringWithFormat:@"url:%@\n\nparam:%@\n\nresponse:%@\n\n",_url,_dic,_response];
+    [UIPasteboard generalPasteboard].string = result;
     [_tableView reloadData];
 }
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error{
     _response = error.localizedDescription;
+    NSString *result = [NSString stringWithFormat:@"url:%@\n\nparam:%@\n\nresponse:%@\n\n",_url,_dic,_response];
+    [UIPasteboard generalPasteboard].string = result;
     [_tableView reloadData];
 }
 
