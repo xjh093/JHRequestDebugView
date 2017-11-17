@@ -27,7 +27,7 @@ UIKIT_EXTERN NSString *const kJHRequestDebugViewNotification;
  1.add this in AppDelegate.m
  
  - (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event{
-    [[NSNotificationCenter defaultCenter] postNotificationName:kJHRequestDebugViewNotification object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"kJHRequestDebugViewNotification" object:nil];
  }
  
  2.invoke 
