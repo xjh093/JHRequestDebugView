@@ -35,6 +35,29 @@ JSONFormat.html
 [[JHRequestDebugView defaultDebugView] jh_set_GET_URL:url parameter:dic];
  ```
  
+ 
+ 
+ ⚠️⚠️⚠️
+ When you shake your phone, and nothing happen!
+ Add a category about UIWindow
+ 
+ ```
+ .h
+ @interface UIWindow (JHRequestDebugViewShake)
+ @end
+ 
+ .m
+ @implementation UIWindow (JHRequestDebugViewShake)
+ -(BOOL)canBecomeFirstResponder{
+ return YES;
+ }
+ 
+ - (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event{
+ [[NSNotificationCenter defaultCenter] postNotificationName:@"kJHRequestDebugViewNotification" object:nil];
+ }
+ @end
+ ```
+ 
 #### 3.just shake your phone to call it out.
  
  ### images:
