@@ -42,4 +42,23 @@ UIKIT_EXTERN NSString *const kJHRequestDebugViewNotification;
     //...
  }];
  
+  ⚠️⚠️⚠️
+ When you shake your phone, and nothing happen!
+ Add a category about UIWindow
+ 
+ .h
+ @interface UIWindow (JHRequestDebugViewShake)
+ @end
+ 
+ .m
+ @implementation UIWindow (JHRequestDebugViewShake)
+ - (BOOL)canBecomeFirstResponder{
+ return YES;
+ }
+ 
+ - (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event{
+ [[NSNotificationCenter defaultCenter] postNotificationName:@"kJHRequestDebugViewNotification" object:nil];
+ }
+ @end
+ 
  */
