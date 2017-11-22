@@ -37,7 +37,19 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 @implementation JHRequestDebugView
 
 + (void)load{
-    [JHRequestDebugView defaultDebugView];
+    
+    //delay load
+    /**< iOS 11 CRASH!
+     *** Assertion failure in -[UIGestureGraphEdge initWithLabel:sourceNode:targetNode:directed:], /BuildRoot/Library/Caches/com.apple.xbs/Sources/UIKit/UIKit-3698.21.8/Source/GestureGraph/UIGestureGraphEdge.m:25
+     2017-11-22 16:19:57.847231+0800 PalmGraspDollMachine[23073:3850447] *** Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'Invalid parameter not satisfying: targetNode'
+     
+     solution:
+     https://huang.sh/2016/09/wkwebview%E5%9C%A8ios-10%E4%B8%8Acrash-invalid-parameter-not-satisfying-targetnode/
+     */
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [JHRequestDebugView defaultDebugView];
+    });
 }
 
 + (instancetype)defaultDebugView{
