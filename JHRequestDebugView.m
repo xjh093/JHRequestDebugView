@@ -32,12 +32,15 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 @property (assign,  nonatomic,  getter=isShow) BOOL  show;
 ///
 @property (copy,    nonatomic) NSString *response;
+///
+@property (strong,  nonatomic) NSMutableArray *urlArray;
+///
+@property (assign,  nonatomic) NSInteger currentUrlIndex;
 @end
 
 @implementation JHRequestDebugView
 
 + (void)load{
-    
     //delay load
     /**< iOS 11 CRASH!
      *** Assertion failure in -[UIGestureGraphEdge initWithLabel:sourceNode:targetNode:directed:], /BuildRoot/Library/Caches/com.apple.xbs/Sources/UIKit/UIKit-3698.21.8/Source/GestureGraph/UIGestureGraphEdge.m:25
@@ -45,8 +48,8 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
      
      solution:
      https://huang.sh/2016/09/wkwebview%E5%9C%A8ios-10%E4%B8%8Acrash-invalid-parameter-not-satisfying-targetnode/
+     
      */
-    
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [JHRequestDebugView defaultDebugView];
     });
@@ -86,6 +89,8 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     maskView.frame = [UIScreen mainScreen].bounds;
     maskView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.3];
     [self addSubview:maskView];
+    
+    _urlArray = @[].mutableCopy;
     
     [self addSubview:self.tableView];
     [self addSubview:self.debugWebView];
@@ -141,15 +146,17 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
         request.HTTPBody = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
     }
     
-    //You may need to set Cookie for the request.
-#if 0
-    NSArray *array = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:@"http://www.example.com"]];
+    //Cookie
+    NSArray *array = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:REQUEST]];
     NSDictionary *cookdict = [NSHTTPCookie requestHeaderFieldsWithCookies:array];
     NSString *cookie = cookdict[@"Cookie"];
     if (cookie.length > 0) {
         [request setValue:cookie forHTTPHeaderField:@"Cookie"];
     }
-#endif
+    NSString *authorization = [ToolObject jhGetLoginToken];
+    if (authorization.length > 0) {
+        [request setValue:authorization forHTTPHeaderField:@"authorization"];
+    }
     
     // request
     [_debugWebView loadRequest:request];
@@ -157,7 +164,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     [_tableView reloadData];
     // show
     _show = YES;
-        
+    
     //add to window
     NSEnumerator *frontToBackWindows = [[[UIApplication sharedApplication] windows] reverseObjectEnumerator];
     for (UIWindow *window in frontToBackWindows)
@@ -181,6 +188,49 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     [_debugWebView loadRequest:[NSURLRequest requestWithURL:url]];
     _debugWebView.frame = _tableView.frame;
     _debugWebView.hidden = NO;
+}
+
+- (void)xx_choose:(UIButton *)button{
+    
+    if (button.tag == 100) { //left
+        _currentUrlIndex--;
+        if (_currentUrlIndex < 0) {
+            _currentUrlIndex = 0;
+            return;
+        }
+    }else{ //right
+        _currentUrlIndex++;
+        if (_currentUrlIndex >= _urlArray.count) {
+            _currentUrlIndex = _urlArray.count - 1;
+            return;
+        }
+    }
+    
+    if (_currentUrlIndex >= 0 && _currentUrlIndex < _urlArray.count) {
+        NSDictionary *dic = _urlArray[_currentUrlIndex];
+        _url    = dic[@"url"];
+        _dic    = dic[@"dic"];
+        _method = dic[@"method"];
+        
+        _show = NO;
+        
+        [self xx_begin_debug];
+    }
+}
+
+- (void)xx_save_url{
+    NSMutableDictionary *urlDic = @{}.mutableCopy;
+    [urlDic setValue:_url forKey:@"url"];
+    [urlDic setValue:_dic forKey:@"dic"];
+    [urlDic setValue:_method forKey:@"method"];
+    
+    [_urlArray addObject:urlDic];
+    
+    while (_urlArray.count > 5) {
+        [_urlArray removeObjectAtIndex:0];
+    }
+    
+    _currentUrlIndex = _urlArray.count - 1;
 }
 
 #pragma mark - UITableViewDelegate,UITableViewDataSource
@@ -278,10 +328,12 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 #pragma mark - public
 - (void)jh_set_GET_URL:(NSString *)url parameter:(NSDictionary *)dic{
     _url = url; _dic = dic; _method = @"GET";
+    [self xx_save_url];
 }
 
 - (void)jh_set_POST_URL:(NSString *)url parameter:(NSDictionary *)dic{
     _url = url; _dic = dic; _method = @"POST";
+    [self xx_save_url];
 }
 
 #pragma mark - setter & getter
@@ -305,6 +357,20 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
             title.font = [UIFont boldSystemFontOfSize:18];
             title.textAlignment = NSTextAlignmentCenter;
             title.backgroundColor = kTitleBackgroundColor;
+            title.userInteractionEnabled = YES;
+            
+            CGFloat w = CGRectGetHeight(title.frame);
+            //left button
+            UIButton *leftButton = [self jhSetupButton:CGRectMake(0,0,w,w) title:@"<<" selector:@selector(xx_choose:)];
+            leftButton.tag = 100;
+            
+            //right button
+            UIButton *rightButton = [self jhSetupButton:CGRectMake(W-w,0,w,w) title:@">>" selector:@selector(xx_choose:)];
+            rightButton.tag = 200;
+            
+            [title addSubview:leftButton];
+            [title addSubview:rightButton];
+            
             title;
         });
         _tableView = tableView;
