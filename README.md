@@ -5,10 +5,16 @@
 ```
 JHRequestDebugView.h
 JHRequestDebugView.m
+UIWindow+JHRequestDebugViewShake.h
+UIWindow+JHRequestDebugViewShake.m
 JSONFormat.html
 ```
 
-### Steps:
+### Steps: 
+
+#### skip step 1
+#### go step 2
+-2017-11-29 18:32:10 
 
 #### 1.add this in AppDelegate.m
 ``` 
