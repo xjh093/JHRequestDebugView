@@ -1,7 +1,7 @@
 # JHRequestDebugView
 请求调试窗口
 
-### 3 files:
+### 3+2 files:
 ```
 JHRequestDebugView.h
 JHRequestDebugView.m
