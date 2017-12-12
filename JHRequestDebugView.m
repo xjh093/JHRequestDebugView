@@ -40,6 +40,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 
 @implementation JHRequestDebugView
 
+#if 0 //the below code is not necessary.
 + (void)load{
     //delay load
     /**< iOS 11 CRASH!
@@ -54,6 +55,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
         [JHRequestDebugView defaultDebugView];
     });
 }
+#endif
 
 + (instancetype)defaultDebugView{
     static JHRequestDebugView *debugView;
