@@ -76,6 +76,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     if (self) {
         [self jhSetupViews];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(xx_begin_debug) name:kJHRequestDebugViewNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(xx_layout) name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
     }
     return self;
 }
@@ -90,6 +91,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     UIView *maskView = [[UIView alloc] init];
     maskView.frame = [UIScreen mainScreen].bounds;
     maskView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.3];
+    maskView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self addSubview:maskView];
     
     _urlArray = @[].mutableCopy;
@@ -148,17 +150,20 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
         request.HTTPBody = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
     }
     
-    //Cookie
-    NSArray *array = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:REQUEST]];
+#if 0
+    // cookie
+    NSArray *array = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:@"www.haocold.com"]];
     NSDictionary *cookdict = [NSHTTPCookie requestHeaderFieldsWithCookies:array];
     NSString *cookie = cookdict[@"Cookie"];
     if (cookie.length > 0) {
         [request setValue:cookie forHTTPHeaderField:@"Cookie"];
     }
-    NSString *authorization = [ToolObject jhGetLoginToken];
+    // token
+    NSString *token = [ToolObject jhGetLoginToken];
     if (authorization.length > 0) {
-        [request setValue:authorization forHTTPHeaderField:@"authorization"];
+        [request setValue:token forHTTPHeaderField:@"token"];
     }
+#endif
     
     // request
     [_debugWebView loadRequest:request];
@@ -180,6 +185,11 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     }
 }
 
+- (void)xx_layout{
+    self.frame = [UIScreen mainScreen].bounds;
+    [_tableView reloadData];
+}
+
 - (void)xx_json_format{
     if (!_debugWebView.hidden) {
         _debugWebView.hidden = YES;
@@ -189,6 +199,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     NSURL *url = [NSURL fileURLWithPath:path];
     [_debugWebView loadRequest:[NSURLRequest requestWithURL:url]];
     _debugWebView.frame = _tableView.frame;
+    _debugWebView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _debugWebView.hidden = NO;
 }
 
@@ -342,10 +353,11 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 - (UITableView *)tableView{
     if (!_tableView) {
         CGFloat W = [UIScreen mainScreen].bounds.size.width - 30;
-        UITableView *tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, W, W*1.25) style:0];
+        CGFloat H = [UIScreen mainScreen].bounds.size.height - 100;
+        UITableView *tableView = [[UITableView alloc] initWithFrame:CGRectMake(15, 40, W, H) style:0];
+        tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         tableView.layer.cornerRadius = 5;
         tableView.clipsToBounds = YES;
-        tableView.center = self.center;
         tableView.delegate = self;
         tableView.dataSource = self;
         tableView.sectionHeaderHeight = 25;
@@ -364,10 +376,12 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
             CGFloat w = CGRectGetHeight(title.frame);
             //left button
             UIButton *leftButton = [self jhSetupButton:CGRectMake(0,0,w,w) title:@"<<" selector:@selector(xx_choose:)];
+            leftButton.autoresizingMask = UIViewAutoresizingFlexibleRightMargin;
             leftButton.tag = 100;
             
             //right button
             UIButton *rightButton = [self jhSetupButton:CGRectMake(W-w,0,w,w) title:@">>" selector:@selector(xx_choose:)];
+            rightButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin;
             rightButton.tag = 200;
             
             [title addSubview:leftButton];
@@ -398,6 +412,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     if (!_jsonFormatButton) {
         CGRect frame = CGRectMake(CGRectGetMinX(_tableView.frame), CGRectGetMaxY(_tableView.frame) + 10 , CGRectGetWidth(_tableView.frame)*0.5 - 10, 40);
         UIButton *button = [self jhSetupButton:frame title:@"JSON Format" selector:@selector(xx_json_format)];
+        button.autoresizingMask = UIViewAutoresizingFlexibleRightMargin| UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
         _jsonFormatButton = button;
     }
     return _jsonFormatButton;
@@ -407,6 +422,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     if (!_closeButton) {
         CGRect frame = CGRectMake(CGRectGetMaxX(_jsonFormatButton.frame)+20, CGRectGetMaxY(_tableView.frame) + 10 , CGRectGetWidth(_tableView.frame)*0.5 - 10, 40);
         UIButton *button = [self jhSetupButton:frame title:@"Close it" selector:@selector(xx_close)];
+        button.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
         _closeButton = button;
     }
     return _closeButton;
