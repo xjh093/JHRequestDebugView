@@ -31,8 +31,12 @@ JSONFormat.html
 
 [[JHRequestDebugView defaultDebugView] jh_set_GET_URL:url parameter:dic];
  ```
+#### 2.config in  `JHRequestDebugView`
+in `- (void)xx_begin_debug`
+set HTTPHeader info if needed.
+
  
-#### 2.just shake your phone to call it out.
+#### 3.just shake your phone to call it out.
  
  ### images:
  ![image](https://github.com/xjh093/JHRequestDebugView/blob/master/Screen%20Shot%202017-10-24%20at%2014.15.38.png)
