@@ -28,6 +28,7 @@
 //  SOFTWARE.
 
 #import "JHRequestDebugView.h"
+#import "JHRequestHistoryView.h"
 
 #define kTitleBackgroundColor [UIColor colorWithRed:0 green:199/255.0 blue:140/255.0 alpha:1]
 #define kTitleColor [UIColor colorWithRed:0 green:199/255.0 blue:140/255.0 alpha:0.5]
@@ -48,6 +49,8 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 ///
 @property (strong,  nonatomic) UIButton *jsonFormatButton;
 ///
+@property (strong,  nonatomic) UIButton *historyButton;
+///
 @property (strong,  nonatomic) UIButton *closeButton;
 ///
 @property (assign,  nonatomic,  getter=isShow) BOOL  show;
@@ -57,6 +60,10 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 @property (strong,  nonatomic) NSMutableArray *urlArray;
 ///
 @property (assign,  nonatomic) NSInteger currentUrlIndex;
+///
+@property (nonatomic,  strong) NSMutableArray *historyArray;
+///
+@property (nonatomic,  strong) JHRequestHistoryView *historyView;
 @end
 
 @implementation JHRequestDebugView
@@ -97,7 +104,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     if (self) {
         [self jhSetupViews];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(xx_begin_debug) name:kJHRequestDebugViewNotification object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(xx_layout) name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(xx_layout_subviews) name:UIApplicationDidChangeStatusBarOrientationNotification object:nil];
     }
     return self;
 }
@@ -116,10 +123,13 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     [self addSubview:maskView];
     
     _urlArray = @[].mutableCopy;
+    _historyArray = @[].mutableCopy;
     
     [self addSubview:self.tableView];
     [self addSubview:self.debugWebView];
+    [self addSubview:self.historyView];
     [self addSubview:self.jsonFormatButton];
+    [self addSubview:self.historyButton];
     [self addSubview:self.closeButton];
 }
 
@@ -173,16 +183,16 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     
 #if 0
     // cookie
-    NSArray *array = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:@"www.haocold.com"]];
+    NSArray *array = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:REQUEST]];
     NSDictionary *cookdict = [NSHTTPCookie requestHeaderFieldsWithCookies:array];
     NSString *cookie = cookdict[@"Cookie"];
     if (cookie.length > 0) {
         [request setValue:cookie forHTTPHeaderField:@"Cookie"];
     }
     // token
-    NSString *token = [ToolObject jhGetLoginToken];
+    NSString *authorization = [ToolObject jhGetLoginToken];
     if (authorization.length > 0) {
-        [request setValue:token forHTTPHeaderField:@"token"];
+        [request setValue:authorization forHTTPHeaderField:@"authorization"];
     }
 #endif
     
@@ -206,7 +216,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     }
 }
 
-- (void)xx_layout{
+- (void)xx_layout_subviews{
     self.frame = [UIScreen mainScreen].bounds;
     [_tableView reloadData];
 }
@@ -222,6 +232,29 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     _debugWebView.frame = _tableView.frame;
     _debugWebView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _debugWebView.hidden = NO;
+}
+
+- (void)xx_history{
+    _historyView.hidden = !_historyView.hidden;
+    if (!_historyView.hidden) {
+        [_historyView reloadData];
+    }
+}
+
+- (void)xx_see_history:(NSDictionary *)dic{
+    _historyView.hidden = !_historyView.hidden;
+    
+    _url = dic[@"url"];
+    _dic = dic[@"parameter"];
+    _response = ({
+        NSData *data = [NSJSONSerialization dataWithJSONObject:dic[@"response"] options:kNilOptions error:NULL];
+        NSString *JSON = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        JSON;
+    });
+    
+    NSString *result = [NSString stringWithFormat:@"url:%@\n\nparam:%@\n\nresponse:%@\n\n",_url,_dic,_response];
+    [UIPasteboard generalPasteboard].string = result;
+    [_tableView reloadData];
 }
 
 - (void)xx_choose:(UIButton *)button{
@@ -370,6 +403,18 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     [self xx_save_url];
 }
 
+- (void)jh_store_history:(NSString *)url parameter:(NSDictionary *)dic response:(NSDictionary *)response{
+    NSMutableDictionary *mdic = @{}.mutableCopy;
+    [mdic setValue:url forKey:@"url"];
+    [mdic setValue:dic forKey:@"parameter"];
+    [mdic setValue:response forKey:@"response"];
+    
+    [_historyArray insertObject:mdic atIndex:0];
+    while (_historyArray.count > 100) {
+        [_historyArray removeLastObject];
+    }
+}
+
 #pragma mark - setter & getter
 - (UITableView *)tableView{
     if (!_tableView) {
@@ -429,9 +474,24 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     return _debugWebView;
 }
 
+- (JHRequestHistoryView *)historyView{
+    if (!_historyView) {
+        _historyView = [[JHRequestHistoryView alloc] initWithFrame:_tableView.frame];
+        _historyView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        _historyView.hidden = YES;
+        _historyView.dataArray = _historyArray;
+        
+        __weak typeof(self) ws = self;
+        _historyView.clickBlock = ^(NSDictionary *dic) {
+            [ws xx_see_history:dic];
+        };
+    }
+    return _historyView;
+}
+
 - (UIButton *)jsonFormatButton{
     if (!_jsonFormatButton) {
-        CGRect frame = CGRectMake(CGRectGetMinX(_tableView.frame), CGRectGetMaxY(_tableView.frame) + 10 , CGRectGetWidth(_tableView.frame)*0.5 - 10, 40);
+        CGRect frame = CGRectMake(CGRectGetMinX(_tableView.frame), CGRectGetMaxY(_tableView.frame) + 10 , (CGRectGetWidth(_tableView.frame) - 20)/3, 40);
         UIButton *button = [self jhSetupButton:frame title:@"JSON Format" selector:@selector(xx_json_format)];
         button.autoresizingMask = UIViewAutoresizingFlexibleRightMargin| UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
         _jsonFormatButton = button;
@@ -439,13 +499,24 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     return _jsonFormatButton;
 }
 
+- (UIButton *)historyButton{
+    if (!_historyButton) {
+        CGRect frame = CGRectMake(CGRectGetMaxX(_jsonFormatButton.frame)+10, CGRectGetMinY(_jsonFormatButton.frame), CGRectGetWidth(_jsonFormatButton.frame), CGRectGetHeight(_jsonFormatButton.frame));
+        UIButton *button = [self jhSetupButton:frame title:@"History" selector:@selector(xx_history)];
+        button.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin| UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+        _historyButton = button;
+    }
+    return _historyButton;
+}
+
 - (UIButton *)closeButton{
     if (!_closeButton) {
-        CGRect frame = CGRectMake(CGRectGetMaxX(_jsonFormatButton.frame)+20, CGRectGetMaxY(_tableView.frame) + 10 , CGRectGetWidth(_tableView.frame)*0.5 - 10, 40);
+        CGRect frame = CGRectMake(CGRectGetMaxX(_historyButton.frame)+10,CGRectGetMinY(_jsonFormatButton.frame), CGRectGetWidth(_jsonFormatButton.frame), CGRectGetHeight(_jsonFormatButton.frame));
         UIButton *button = [self jhSetupButton:frame title:@"Close it" selector:@selector(xx_close)];
         button.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
         _closeButton = button;
     }
     return _closeButton;
 }
+
 @end

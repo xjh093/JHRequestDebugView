@@ -41,6 +41,9 @@ UIKIT_EXTERN NSString *const kJHRequestDebugViewNotification;
 /// for POST
 - (void)jh_set_POST_URL:(NSString *)url parameter:(NSDictionary *)dic;
 
+/// store request data for debug
+- (void)jh_store_history:(NSString *)url parameter:(NSDictionary *)dic response:(NSDictionary *)response;
+
 @end
 
 /**< Steps:
@@ -63,7 +66,7 @@ UIKIT_EXTERN NSString *const kJHRequestDebugViewNotification;
     //...
  }];
  
-  ⚠️⚠️⚠️
+ ⚠️⚠️⚠️
  When you shake your phone, and nothing happen!
  Add a category about UIWindow
  
