@@ -1,6 +1,8 @@
 # JHRequestDebugView
 请求调试窗口
 
+---
+
 ### 3+2 files:
 ```
 JSONFormat.html          // JSON格式化
@@ -11,6 +13,12 @@ JHRequestHistoryView.m
 UIWindow+JHRequestDebugViewShake.h   // 摇一摇
 UIWindow+JHRequestDebugViewShake.m
 ```
+---
+
+### Logs
+1.添加历史记录(add history).(2018-9-28)
+
+---
 
 ### Steps: 
 
@@ -43,6 +51,8 @@ set HTTPHeader info if needed.
 
  
 #### 3.just shake your phone to call it out.
+ 
+ ---
  
  ### images:
  ![image](https://github.com/xjh093/JHRequestDebugView/blob/master/Screen%20Shot%202017-10-24%20at%2014.15.38.png)
