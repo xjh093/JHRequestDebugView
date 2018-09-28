@@ -16,7 +16,7 @@ UIWindow+JHRequestDebugViewShake.m
 ---
 
 ### Logs
-1.添加历史记录(add history).(2018-9-28)
+1.添加历史记录(add history).(2018-9-28)  version:1.1.0
 
 ---
 
