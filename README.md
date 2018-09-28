@@ -3,11 +3,13 @@
 
 ### 3+2 files:
 ```
-JHRequestDebugView.h
+JSONFormat.html          // JSON格式化
+JHRequestDebugView.h     // 调试窗口
 JHRequestDebugView.m
-UIWindow+JHRequestDebugViewShake.h
+JHRequestHistoryView.h   // 历史记录
+JHRequestHistoryView.m
+UIWindow+JHRequestDebugViewShake.h   // 摇一摇
 UIWindow+JHRequestDebugViewShake.m
-JSONFormat.html
 ```
 
 ### Steps: 
@@ -25,6 +27,10 @@ JSONFormat.html
  AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
  [manager GET:url parameters:dic progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
     //...
+#if DEBUG
+    // save for debug.
+    [[JHRequestDebugView defaultDebugView] jh_store_history:URL parameter:dic response:responseObject];
+#endif
  } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
     //...
  }];
