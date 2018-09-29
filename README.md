@@ -3,7 +3,7 @@
 
 ---
 
-### 3+2 files:
+# Files:
 ```
 JSONFormat.html          // JSON格式化
 JHRequestDebugView.h     // 调试窗口
@@ -15,48 +15,60 @@ UIWindow+JHRequestDebugViewShake.m
 ```
 ---
 
-### Logs
-#### 1.添加历史记录(add history).(2018-9-28) -> version:1.1.0
-
-#### 0.upload.
+# Logs
+## 2.添加新方法(add method).(2018-9-29) -> version:1.2.0
+## 1.添加历史记录(add history).(2018-9-28) -> version:1.1.0
+## 0.upload.
 
 ---
 
-### Steps: 
-
--2017-11-29 18:32:10 
-
-#### 1.invoke 
+# Example:
+ 
+ ---------------------- version 1.2.0 ---------------------------
+ 
+ GET request :
  ```
- [[JHRequestDebugView defaultDebugView] jh_set_GET_URL:url parameter:dic];
- or
- [[JHRequestDebugView defaultDebugView] jh_set_POST_URL:url parameter:dic];
+ NSURLSessionDataTask *task = [manager GET:url parameters:dic progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+     // other code
+ 
+ #if DEBUG
+    // save for debug.
+    [[JHRequestDebugView defaultDebugView] jh_store_history:url parameter:dic response:responseObject];
+ #endif
+ 
+ } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+     // other code
+ }];
+ 
+ [[JHRequestDebugView defaultDebugView] jh_set_GET_task:task parameter:dic];
  ```
-#### before or after the following code.
+ 
+ ---------------------- version 1.0.0 ---------------------------
+ 
+ You should set token or cookie in HTTPHeaderField if needed (in version 1.0.0).
+ 
+ GET request :
  ```
- AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
  [manager GET:url parameters:dic progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-    //...
-#if DEBUG
+     // other code
+ 
+ #if DEBUG
     // save for debug.
     [[JHRequestDebugView defaultDebugView] jh_store_history:URL parameter:dic response:responseObject];
-#endif
- } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-    //...
- }];
-
-[[JHRequestDebugView defaultDebugView] jh_set_GET_URL:url parameter:dic];
- ```
-#### 2.config in  `JHRequestDebugView`
-in `- (void)xx_begin_debug`
-set HTTPHeader info if needed.
-
+ #endif
  
-#### 3.just shake your phone to call it out.
+ } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+     // other code
+ }];
+ 
+ [[JHRequestDebugView defaultDebugView] jh_set_GET_URL:url parameter:dic];
+```
+ 
+## just shake your phone to call it out.
  
  ---
  
- ### images:
+ # images:
  ![image](https://github.com/xjh093/JHRequestDebugView/blob/master/Screen%20Shot%202017-10-24%20at%2014.15.38.png)
  ![image](https://github.com/xjh093/JHRequestDebugView/blob/master/Screen%20Shot%202017-10-24%20at%2014.15.46.png)
  ![image](https://github.com/xjh093/JHRequestDebugView/blob/master/Screen%20Shot%202017-10-24%20at%2014.15.57.png)
