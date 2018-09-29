@@ -64,6 +64,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 @property (nonatomic,  strong) NSMutableArray *historyArray;
 ///
 @property (nonatomic,  strong) JHRequestHistoryView *historyView;
+
 @end
 
 @implementation JHRequestDebugView
@@ -156,45 +157,52 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 }
 
 - (void)xx_begin_debug{
+    
     if (_show == YES || _url.length == 0 || _method.length == 0) {
         return;
     }
     
-    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:_url]];
-    request.HTTPMethod = _method;
-    request.timeoutInterval = 10;
-    NSMutableArray *httpBodys = @[].mutableCopy;
-    for (NSString *key in _dic.allKeys) {
-        NSString *value = _dic[key];
-        [httpBodys addObject:[NSString stringWithFormat:@"%@=%@",key,value]];
-    }
-    NSString *bodyString = [httpBodys componentsJoinedByString:@"&"];
+    NSDictionary *dic = _urlArray[_currentUrlIndex];
     
-    if ([_method isEqualToString:@"GET"]) {
-        NSString *URL = _url;
-        if (bodyString.length > 0) {
-            URL = [NSString stringWithFormat:@"%@?%@",_url,bodyString];
+    NSMutableURLRequest *request = dic[@"request"];
+    if (!request) {
+        request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:_url]];
+        request.HTTPMethod = _method;
+        request.timeoutInterval = 10;
+        NSMutableArray *httpBodys = @[].mutableCopy;
+        for (NSString *key in _dic.allKeys) {
+            NSString *value = _dic[key];
+            [httpBodys addObject:[NSString stringWithFormat:@"%@=%@",key,value]];
         }
-        URL = [URL stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-        request.URL = [NSURL URLWithString:URL];
-    }else if ([_method isEqualToString:@"POST"]){
-        request.HTTPBody = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
-    }
-    
+        NSString *bodyString = [httpBodys componentsJoinedByString:@"&"];
+        
+        if ([_method isEqualToString:@"GET"]) {
+            NSString *URL = _url;
+            if (bodyString.length > 0) {
+                URL = [NSString stringWithFormat:@"%@?%@",_url,bodyString];
+            }
+            URL = [URL stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+            request.URL = [NSURL URLWithString:URL];
+        }else if ([_method isEqualToString:@"POST"]){
+            request.HTTPBody = [bodyString dataUsingEncoding:NSUTF8StringEncoding];
+        }
+        
+#warning "You should set token or cookie in HTTPHeaderField if needed (in version 1.0.0)."
 #if 0
-    // cookie
-    NSArray *array = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:REQUEST]];
-    NSDictionary *cookdict = [NSHTTPCookie requestHeaderFieldsWithCookies:array];
-    NSString *cookie = cookdict[@"Cookie"];
-    if (cookie.length > 0) {
-        [request setValue:cookie forHTTPHeaderField:@"Cookie"];
-    }
-    // token
-    NSString *authorization = [ToolObject jhGetLoginToken];
-    if (authorization.length > 0) {
-        [request setValue:authorization forHTTPHeaderField:@"authorization"];
-    }
+        // cookie
+        NSArray *array = [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookiesForURL:[NSURL URLWithString:@"request"]];
+        NSDictionary *cookdict = [NSHTTPCookie requestHeaderFieldsWithCookies:array];
+        NSString *cookie = cookdict[@"Cookie"];
+        if (cookie.length > 0) {
+            [request setValue:cookie forHTTPHeaderField:@"Cookie"];
+        }
+        // token
+        NSString *token = @"token"
+        if (token) {
+            [request setValue:token forHTTPHeaderField:@"Authorization"];
+        }
 #endif
+    }
     
     // request
     [_debugWebView loadRequest:request];
@@ -259,6 +267,8 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 
 - (void)xx_choose:(UIButton *)button{
     
+    NSInteger count = _urlArray.count;
+    
     if (button.tag == 100) { //left
         _currentUrlIndex--;
         if (_currentUrlIndex < 0) {
@@ -267,37 +277,50 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
         }
     }else{ //right
         _currentUrlIndex++;
-        if (_currentUrlIndex >= _urlArray.count) {
-            _currentUrlIndex = _urlArray.count - 1;
+        if (_currentUrlIndex >= count) {
+            _currentUrlIndex = count - 1;
             return;
         }
     }
     
-    if (_currentUrlIndex >= 0 && _currentUrlIndex < _urlArray.count) {
+    if (_currentUrlIndex >= 0 && _currentUrlIndex < count) {
+
         NSDictionary *dic = _urlArray[_currentUrlIndex];
-        _url    = dic[@"url"];
+        NSURLRequest *request = dic[@"request"];
+        if (request) {
+            _url = request.URL.absoluteString;
+        }else{
+            _url = dic[@"url"];
+        }
         _dic    = dic[@"dic"];
         _method = dic[@"method"];
-        
+
         _show = NO;
         
         [self xx_begin_debug];
     }
 }
 
-- (void)xx_save_url{
+- (void)xx_save_url:(NSURLSessionDataTask *)task{
+    
     NSMutableDictionary *urlDic = @{}.mutableCopy;
-    [urlDic setValue:_url forKey:@"url"];
+    if (task) {
+        [urlDic setValue:task.originalRequest forKey:@"request"];
+    }else{
+        [urlDic setValue:_url forKey:@"url"];
+    }
     [urlDic setValue:_dic forKey:@"dic"];
     [urlDic setValue:_method forKey:@"method"];
     
-    [_urlArray addObject:urlDic];
-    
-    while (_urlArray.count > 5) {
-        [_urlArray removeObjectAtIndex:0];
+    @synchronized(self) {
+        [_urlArray addObject:urlDic];
+        
+        while (_urlArray.count > 5) {
+            [_urlArray removeObjectAtIndex:0];
+        }
+        
+        _currentUrlIndex = _urlArray.count - 1;
     }
-    
-    _currentUrlIndex = _urlArray.count - 1;
 }
 
 #pragma mark - UITableViewDelegate,UITableViewDataSource
@@ -393,14 +416,25 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 }
 
 #pragma mark - public
+
+- (void)jh_set_GET_task:(NSURLSessionDataTask *)task parameter:(NSDictionary *)dic{
+    _url = task.originalRequest.URL.absoluteString; _dic = dic; _method = @"GET";
+    [self xx_save_url:task];
+}
+
+- (void)jh_set_POST_task:(NSURLSessionDataTask *)task parameter:(NSDictionary *)dic{
+    _url = task.originalRequest.URL.absoluteString; _dic = dic; _method = @"POST";
+    [self xx_save_url:task];
+}
+
 - (void)jh_set_GET_URL:(NSString *)url parameter:(NSDictionary *)dic{
     _url = url; _dic = dic; _method = @"GET";
-    [self xx_save_url];
+    [self xx_save_url:nil];
 }
 
 - (void)jh_set_POST_URL:(NSString *)url parameter:(NSDictionary *)dic{
     _url = url; _dic = dic; _method = @"POST";
-    [self xx_save_url];
+    [self xx_save_url:nil];
 }
 
 - (void)jh_store_history:(NSString *)url parameter:(NSDictionary *)dic response:(NSDictionary *)response{
@@ -409,9 +443,11 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     [mdic setValue:dic forKey:@"parameter"];
     [mdic setValue:response forKey:@"response"];
     
-    [_historyArray insertObject:mdic atIndex:0];
-    while (_historyArray.count > 100) {
-        [_historyArray removeLastObject];
+    @synchronized(self) {
+        [_historyArray insertObject:mdic atIndex:0];
+        while (_historyArray.count > 100) {
+            [_historyArray removeLastObject];
+        }
     }
 }
 

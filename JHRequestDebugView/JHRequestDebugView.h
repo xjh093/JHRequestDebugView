@@ -35,54 +35,68 @@ UIKIT_EXTERN NSString *const kJHRequestDebugViewNotification;
 
 + (instancetype)defaultDebugView;
 
+#pragma mark - v1.2.0
 /// for GET
-- (void)jh_set_GET_URL:(NSString *)url parameter:(NSDictionary *)dic;
+- (void)jh_set_GET_task:(NSURLSessionDataTask *)task parameter:(NSDictionary *)dic;
 
 /// for POST
-- (void)jh_set_POST_URL:(NSString *)url parameter:(NSDictionary *)dic;
+- (void)jh_set_POST_task:(NSURLSessionDataTask *)task parameter:(NSDictionary *)dic;
 
+#pragma mark - v1.1.0
 /// store request data for debug
 - (void)jh_store_history:(NSString *)url parameter:(NSDictionary *)dic response:(NSDictionary *)response;
 
+#pragma mark - v1.0.0
+/*
+ You should set token or cookie in HTTPHeaderField if needed for two methods below.
+ */
+
+/// for GET
+- (void)jh_set_GET_URL:(NSString *)url parameter:(NSDictionary *)dic;
+/// for POST
+- (void)jh_set_POST_URL:(NSString *)url parameter:(NSDictionary *)dic;
+
 @end
 
-/**< Steps:
+/**< Example:
  
- 1.add this in AppDelegate.m
+ ---------------------- version 1.2.0 ---------------------------
  
- - (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event{
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"kJHRequestDebugViewNotification" object:nil];
- }
+ GET request :
  
- 2.invoke 
- [[JHRequestDebugView defaultDebugView] jh_set_GET_URL:url parameter:dic]; or
- [[JHRequestDebugView defaultDebugView] jh_set_POST_URL:url parameter:dic];
- before or after the following code.
+ NSURLSessionDataTask *task = [manager GET:url parameters:dic progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+     // other code
  
- AFHTTPSessionManager *manager = [AFHTTPSessionManager manager];
- [manager GET:url parameters:dic progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-    //...
+ #if DEBUG
+    // save for debug.
+    [[JHRequestDebugView defaultDebugView] jh_store_history:url parameter:dic response:responseObject];
+ #endif
+ 
  } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-    //...
+     // other code
  }];
  
- ⚠️⚠️⚠️
- When you shake your phone, and nothing happen!
- Add a category about UIWindow
+ [[JHRequestDebugView defaultDebugView] jh_set_GET_task:task parameter:dic];
  
- .h
- @interface UIWindow (JHRequestDebugViewShake)
- @end
  
- .m
- @implementation UIWindow (JHRequestDebugViewShake)
- - (BOOL)canBecomeFirstResponder{
- return YES;
- }
+ ---------------------- version 1.0.0 ---------------------------
  
- - (void)motionBegan:(UIEventSubtype)motion withEvent:(UIEvent *)event{
- [[NSNotificationCenter defaultCenter] postNotificationName:@"kJHRequestDebugViewNotification" object:nil];
- }
- @end
+ You should set token or cookie in HTTPHeaderField if needed (in version 1.0.0).
+ 
+ GET request :
+ 
+ [manager GET:url parameters:dic progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+     // other code
+ 
+ #if DEBUG
+    // save for debug.
+    [[JHRequestDebugView defaultDebugView] jh_store_history:URL parameter:dic response:responseObject];
+ #endif
+ 
+ } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+     // other code
+ }];
+ 
+ [[JHRequestDebugView defaultDebugView] jh_set_GET_URL:url parameter:dic];
  
  */
