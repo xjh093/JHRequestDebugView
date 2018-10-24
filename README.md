@@ -15,6 +15,9 @@ UIWindow+JHRequestDebugViewShake.m
 ```
 ---
 
+# Version
+Latest version: 1.2.2
+
 # Logs
 ## 2.添加新方法(add method).(2018-9-29) -> version:1.2.0
 ## 1.添加历史记录(add history).(2018-9-28) -> version:1.1.0
