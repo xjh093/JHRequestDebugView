@@ -255,12 +255,26 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     _url = dic[@"url"];
     _dic = dic[@"parameter"];
     _response = ({
-        NSData *data = [NSJSONSerialization dataWithJSONObject:dic[@"response"] options:kNilOptions error:NULL];
-        NSString *JSON = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        NSString *JSON;
+        NSDictionary *dict;
+        @try{
+            dict = [NSJSONSerialization JSONObjectWithData:dic[@"response"] options:kNilOptions error:nil];
+            NSData *data = [NSJSONSerialization dataWithJSONObject:dict options:kNilOptions error:NULL];
+            JSON = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        }
+        @catch (NSException *exception) {
+            NSLog(@"exception:%@",exception);
+            JSON = exception.description;
+        }
+        @finally {
+            if (JSON.length == 0) {
+                JSON = [NSString stringWithFormat:@"%@",dic[@"response"]];
+            }
+        }
         JSON;
     });
     
-    NSString *result = [NSString stringWithFormat:@"url:%@\n\nparam:%@\n\nresponse:%@\n\n",_url,_dic,_response];
+    NSString *result = [NSString stringWithFormat:@"url:\n%@\n\nparam:\n%@\n\nresponse:\n%@\n\n",_url,_dic,_response];
     [UIPasteboard generalPasteboard].string = result;
     [_tableView reloadData];
 }
@@ -403,14 +417,14 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     }else{
         _response = innerText;
     }
-    NSString *result = [NSString stringWithFormat:@"url:%@\n\nparam:%@\n\nresponse:%@\n\n",_url,_dic,_response];
+    NSString *result = [NSString stringWithFormat:@"url:\n%@\n\nparam:\n%@\n\nresponse:\n%@\n\n",_url,_dic,_response];
     [UIPasteboard generalPasteboard].string = result;
     [_tableView reloadData];
 }
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error{
     _response = error.localizedDescription;
-    NSString *result = [NSString stringWithFormat:@"url:%@\n\nparam:%@\n\nresponse:%@\n\n",_url,_dic,_response];
+    NSString *result = [NSString stringWithFormat:@"url:\n%@\n\nparam:\n%@\n\nresponse:\n%@\n\n",_url,_dic,_response];
     [UIPasteboard generalPasteboard].string = result;
     [_tableView reloadData];
 }
