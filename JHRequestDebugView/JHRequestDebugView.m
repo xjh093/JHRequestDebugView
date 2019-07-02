@@ -29,13 +29,21 @@
 
 #import "JHRequestDebugView.h"
 #import "JHRequestHistoryView.h"
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_7_1
+#define kUse_WK 1
+#import <WebKit/WebKit.h>
+#endif
 
 #define kTitleBackgroundColor [UIColor colorWithRed:0 green:199/255.0 blue:140/255.0 alpha:1]
 #define kTitleColor [UIColor colorWithRed:0 green:199/255.0 blue:140/255.0 alpha:0.5]
 
 NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotification";
 
+#if kUse_WK
+@interface JHRequestDebugView()<UITableViewDelegate,UITableViewDataSource,WKNavigationDelegate>
+#else
 @interface JHRequestDebugView()<UITableViewDelegate,UITableViewDataSource,UIWebViewDelegate>
+#endif
 /// request url.
 @property (copy,    nonatomic) NSString *url;
 /// request method.
@@ -45,7 +53,11 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 ///
 @property (strong,  nonatomic) UITableView *tableView;
 ///
+#if kUse_WK
+@property (strong,  nonatomic) WKWebView *debugWebView;
+#else
 @property (strong,  nonatomic) UIWebView *debugWebView;
+#endif
 ///
 @property (strong,  nonatomic) UIButton *jsonFormatButton;
 ///
@@ -387,6 +399,64 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     return cell;
 }
 
+#if kUse_WK
+#pragma mark - WKNavigationDelegate
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
+{
+    decisionHandler(WKNavigationActionPolicyAllow);
+}
+
+- (void)webView:(WKWebView *)webView didFinishNavigation:(null_unspecified WKNavigation *)navigation
+{
+    //本地html
+    if (!webView.hidden) {
+        //设置textarea 内容
+        NSString *js = [NSString stringWithFormat:@"document.getElementById(\"RawJson\").value = '%@';",_response];
+        [webView evaluateJavaScript:js completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+            
+        }];
+        
+        //模拟点击 着色 按钮
+        js = @"var clickEvent=document.createEvent('MouseEvent');" // 1.创建一个鼠标事件类型
+        "clickEvent.initMouseEvent('click',false,false,window,0,0,0,0,0,false,false,false,false,0,null);" // 2.初始化一个click事件
+        "document.getElementById('ZSbutton').dispatchEvent(clickEvent);"; // 3.派发(触发)
+        [webView evaluateJavaScript:js completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+            
+        }];
+        return;
+    }
+    
+    //请求数据
+    __weak typeof(self) ws = self;
+    NSString *innerText = @"document.body.innerText";
+    [webView evaluateJavaScript:innerText completionHandler:^(id _Nullable text, NSError * _Nullable error) {
+        text = [text stringByReplacingOccurrencesOfString:@"\\n" withString:@""];
+        text = [text stringByReplacingOccurrencesOfString:@"\t" withString:@""];
+        text = [text stringByReplacingOccurrencesOfString:@"\\" withString:@""];
+        NSData *data = [text dataUsingEncoding:NSUTF8StringEncoding];
+        NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
+        if (dic) {
+            ws.response = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        }else{
+            ws.response = text;
+        }
+    
+        NSString *result = [NSString stringWithFormat:@"url:\n%@\n\nparam:\n%@\n\nresponse:\n%@\n\n",ws.url,ws.dic,ws.response];
+        [UIPasteboard generalPasteboard].string = result;
+        [ws.tableView reloadData];
+    }];
+}
+
+- (void)webView:(WKWebView *)webView didFailNavigation:(null_unspecified WKNavigation *)navigation withError:(NSError *)error
+{
+    _response = error.localizedDescription;
+    NSString *result = [NSString stringWithFormat:@"url:\n%@\n\nparam:\n%@\n\nresponse:\n%@\n\n",_url,_dic,_response];
+    [UIPasteboard generalPasteboard].string = result;
+    [_tableView reloadData];
+}
+
+
+#else
 #pragma mark - UIWebViewDelegate
 - (void)webViewDidFinishLoad:(UIWebView *)webView{
     //本地html
@@ -428,6 +498,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     [UIPasteboard generalPasteboard].string = result;
     [_tableView reloadData];
 }
+#endif
 
 #pragma mark - public
 
@@ -479,6 +550,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
         tableView.sectionHeaderHeight = 25;
         tableView.tableFooterView = [[UIView alloc] init];
         tableView.showsVerticalScrollIndicator = NO;
+        tableView.estimatedRowHeight = UITableViewAutomaticDimension;
         tableView.tableHeaderView = ({
             UILabel *title = [[UILabel alloc] init];
             title.frame = CGRectMake(0, 0, W, 40);
@@ -510,10 +582,19 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     return _tableView;
 }
 
+#if kUse_WK
+- (WKWebView *)debugWebView{
+#else
 - (UIWebView *)debugWebView{
+#endif
     if (!_debugWebView) {
+#if kUse_WK
+        WKWebView *webView = [[WKWebView alloc] init];
+        webView.navigationDelegate = self;
+#else
         UIWebView *webView = [[UIWebView alloc] init];
         webView.delegate = self;
+#endif
         webView.hidden = YES;
         webView.layer.cornerRadius = 5;
         webView.clipsToBounds = YES;
