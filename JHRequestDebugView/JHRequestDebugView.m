@@ -174,6 +174,10 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
         return;
     }
     
+    if (_urlArray.count == 0) {
+        return;
+    }
+    
     NSDictionary *dic = _urlArray[_currentUrlIndex];
     
     NSMutableURLRequest *request = dic[@"request"];
