@@ -16,7 +16,7 @@ UIWindow+JHRequestDebugViewShake.m
 ---
 
 # Version
-Latest version: 1.2.3
+Latest version: 1.2.4
 
 # Logs
 - 2.添加新方法(add method).(2018-9-29) -> version:1.2.0
