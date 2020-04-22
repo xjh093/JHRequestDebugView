@@ -76,6 +76,8 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
 @property (nonatomic,  strong) NSMutableArray *historyArray;
 ///
 @property (nonatomic,  strong) JHRequestHistoryView *historyView;
+///
+@property (nonatomic,  strong) NSBundle *bundle;
 
 @end
 
@@ -250,7 +252,19 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
         _debugWebView.hidden = YES;
         return;
     }
-    NSString *path = [[NSBundle mainBundle] pathForResource:@"JSONFormat.html" ofType:nil];
+    
+    if (!_bundle) {
+        //没使用framwork的情况下
+        NSURL *url = [[NSBundle mainBundle] URLForResource:@"JHRequestDebugView" withExtension:@"bundle"];
+        if (!url) {
+            //使用framework形式
+            url = [[NSBundle mainBundle] URLForResource:@"Frameworks" withExtension:nil];
+            url = [url URLByAppendingPathComponent:@"JHRequestDebugView.framework/JHRequestDebugView.bundle"];
+        }
+        _bundle = [NSBundle bundleWithURL:url];
+    }
+
+    NSString *path = [_bundle pathForResource:@"JSONFormat.html" ofType:nil];
     NSURL *url = [NSURL fileURLWithPath:path];
     [_debugWebView loadRequest:[NSURLRequest requestWithURL:url]];
     _debugWebView.frame = _tableView.frame;
@@ -274,13 +288,17 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
         NSString *JSON;
         NSDictionary *dict;
         @try{
-            dict = [NSJSONSerialization JSONObjectWithData:dic[@"response"] options:kNilOptions error:nil];
+            if ([dic[@"response"] isKindOfClass:[NSDictionary class]]) {
+                dict = dic[@"response"];
+            }else{
+                dict = [NSJSONSerialization JSONObjectWithData:dic[@"response"] options:kNilOptions error:nil];
+            }
             NSData *data = [NSJSONSerialization dataWithJSONObject:dict options:kNilOptions error:NULL];
             JSON = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         }
         @catch (NSException *exception) {
             NSLog(@"exception:%@",exception);
-            JSON = exception.description;
+//            JSON = exception.description;
         }
         @finally {
             if (JSON.length == 0) {
@@ -389,7 +407,7 @@ NSString *const kJHRequestDebugViewNotification = @"kJHRequestDebugViewNotificat
     if (cell == nil) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:ID];
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
-        cell.textLabel.adjustsFontSizeToFitWidth = YES;
+        //cell.textLabel.adjustsFontSizeToFitWidth = YES;
         cell.textLabel.numberOfLines = 0;
     }
     if (indexPath.section == 0) {

@@ -2,7 +2,7 @@
 Pod::Spec.new do |s|
   s.name         = 'JHRequestDebugView'
   s.summary      = 'A simple request debug view.'
-  s.version      = '1.2.4'
+  s.version      = '1.2.5'
   s.license      = { :type => 'MIT'}
   s.authors      = { 'Haocold' => 'xjh093@126.com' }
   s.homepage     = 'https://github.com/xjh093/JHRequestDebugView'
@@ -11,8 +11,9 @@ Pod::Spec.new do |s|
 
   s.source       = { :git => 'https://github.com/xjh093/JHRequestDebugView.git', :tag => s.version}
   
-  s.source_files = 'JHRequestDebugView/*.{h,m,html}'
+  s.source_files = 'JHRequestDebugView/*.{h,m}'
   s.requires_arc = true
   s.framework    = 'UIKit'
+  s.resource     = 'JHRequestDebugView/JHRequestDebugView.bundle'
 
 end
