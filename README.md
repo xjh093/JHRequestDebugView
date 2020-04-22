@@ -35,15 +35,13 @@ Latest version: 1.2.5
      // other code
  
  #if DEBUG
-    // save for debug.
+    [[JHRequestDebugView defaultDebugView] jh_set_GET_task:task parameter:dic];
     [[JHRequestDebugView defaultDebugView] jh_store_history:url parameter:dic response:responseObject];
  #endif
  
  } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
      // other code
  }];
- 
- [[JHRequestDebugView defaultDebugView] jh_set_GET_task:task parameter:dic];
  ```
  
  ---------------------- version 1.0.0 ---------------------------
@@ -56,15 +54,13 @@ Latest version: 1.2.5
      // other code
  
  #if DEBUG
-    // save for debug.
+    [[JHRequestDebugView defaultDebugView] jh_set_GET_URL:task.originalRequest.URL.absoluteString parameter:dic];
     [[JHRequestDebugView defaultDebugView] jh_store_history:URL parameter:dic response:responseObject];
  #endif
  
  } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
      // other code
  }];
- 
- [[JHRequestDebugView defaultDebugView] jh_set_GET_URL:url parameter:dic];
 ```
  
 ## just shake your phone to call it out.
